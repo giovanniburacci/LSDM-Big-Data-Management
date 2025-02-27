@@ -59,8 +59,7 @@ def load_csv_to_redis(csv_file):
         pipeline.execute()  # Execute all operations in batch
         print(f"✅ Loaded {reader.line_num - 1} movies into Redis.")
 
-# Run the script
 if __name__ == "__main__":
-    csv_file_path = "filmtv_movies.csv"  # Change this to your CSV file path
-    create_index()  # Create index before loading data
+    csv_file_path = "filmtv_movies.csv"
+    create_index()
     load_csv_to_redis(csv_file_path)
