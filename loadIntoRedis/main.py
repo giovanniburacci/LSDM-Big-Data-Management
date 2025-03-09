@@ -13,11 +13,12 @@ NUMERIC_FIELDS = ["year", "duration", "avg_vote", "critics_vote", "public_vote",
                   "humor", "rhythm", "effort", "tension", "erotism"]
 
 def create_index():
-    """Create a RediSearch index for efficient searching & aggregation."""
     try:
-        redis_client.execute_command("FT.DROPINDEX", INDEX_NAME, "DD")  # Delete if exists
+        # Delete if exists
+        redis_client.execute_command("FT.DROPINDEX", INDEX_NAME, "DD")
     except redis.exceptions.ResponseError:
-        pass  # Ignore if index doesn't exist
+        # Ignore if index doesn't exist
+        pass
 
     # Define the FT.CREATE command for RediSearch
     schema = ["FT.CREATE", INDEX_NAME, "ON", "HASH", "PREFIX", "1", "movie:",
@@ -25,9 +26,11 @@ def create_index():
 
     # Add fields to schema
     for field in SEARCHABLE_FIELDS:
-        schema.extend([field, "TEXT"])  # Searchable fields
+        # Searchable fields
+        schema.extend([field, "TEXT"])
     for field in NUMERIC_FIELDS:
-        schema.extend([field, "NUMERIC", "SORTABLE"])  # Numeric and sortable
+        # Numeric and sortable
+        schema.extend([field, "NUMERIC", "SORTABLE"])
 
     # Execute command
     redis_client.execute_command(*schema)
@@ -37,10 +40,12 @@ def load_csv_to_redis(csv_file):
     with open(csv_file, newline='', encoding='utf-8') as file:
         reader = csv.DictReader(file)
 
-        pipeline = redis_client.pipeline()  # Use pipeline for efficiency
+        # Use pipeline for efficiency
+        pipeline = redis_client.pipeline()
 
         for row in reader:
-            movie_id = f"movie:{row['filmtv_id']}"  # Unique key for each movie
+            # Unique key for each movie
+            movie_id = f"movie:{row['filmtv_id']}"
 
             # Prepare movie data
             movie_data = {k: v for k, v in row.items() if v.strip()}  # Remove empty fields
@@ -49,14 +54,17 @@ def load_csv_to_redis(csv_file):
             for field in NUMERIC_FIELDS:
                 if field in movie_data:
                     try:
-                        movie_data[field] = float(movie_data[field])  # Store as float for aggregations
+                        # Store as float for aggregations
+                        movie_data[field] = float(movie_data[field])
                     except ValueError:
-                        movie_data[field] = 0  # Default to 0 if parsing fails
+                        # Default to 0 if parsing fails
+                        movie_data[field] = 0
 
             # Store movie in Redis as a HASH
             pipeline.hset(movie_id, mapping=movie_data)
 
-        pipeline.execute()  # Execute all operations in batch
+        # Execute all operations in batch, solely for network optimization, not a transaction
+        pipeline.execute()
         print(f"✅ Loaded {reader.line_num - 1} movies into Redis.")
 
 if __name__ == "__main__":
